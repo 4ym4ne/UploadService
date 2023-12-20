@@ -1,5 +1,6 @@
 package com.uploadservice.controller;
 
+import com.uploadservice.DTO.FileUploadResponseDTO;
 import com.uploadservice.services.FileUploadService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
@@ -24,17 +25,18 @@ public class FileUploadController {
     @PostMapping(
             "/upload"
     )
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<FileUploadResponseDTO> handleFileUpload(@RequestParam("file") MultipartFile file) {
         String filename = fileUploadService.uploadFile(file);
+        FileUploadResponseDTO response;
         // Check if the uploaded file is an image
         if (isImage(file)) {
-            // Call the method to create a low-quality preview
             String previewFilename = fileUploadService.createImagePreview(filename, 0.5); // 50% quality reduction
-            return ResponseEntity.ok().body("File uploaded successfully.\n" +
-                    "Original File: " + filename + ",\n" +
-                    "Preview File: " + previewFilename);
+            response = new FileUploadResponseDTO(filename, previewFilename);
+        } else {
+            response = new FileUploadResponseDTO(filename, "Not Supported");
         }
-        return ResponseEntity.ok().body("File uploaded successfully: " + filename);
+
+        return ResponseEntity.ok(response);
     }
 
 
