@@ -1,20 +1,17 @@
 package com.uploadservice.services;
 
-import org.apache.commons.imaging.ImageFormats;
-import org.apache.commons.imaging.ImageReadException;
-import org.apache.commons.imaging.ImageWriteException;
-import org.apache.commons.imaging.Imaging;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,54 +44,63 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     @Override
-    public String uploadFile(MultipartFile file) {
-        try {
-            if (!allowedFileTypes.contains(file.getContentType())) {
-                throw new RuntimeException("File type not allowed.");
+    public Mono<String> uploadFile(MultipartFile file) {
+        return Mono.fromCallable(() -> {
+            try {
+                if (!allowedFileTypes.contains(file.getContentType())) {
+                    throw new RuntimeException("File type not allowed.");
+                }
+                if (file.isEmpty()) {
+                    throw new RuntimeException("Failed to store empty file.");
+                }
+                String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                Files.copy(file.getInputStream(), this.rootLocation.resolve(filename));
+                return filename;
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to store file.", e);
             }
-            if (file.isEmpty()) {
-                throw new RuntimeException("Failed to store empty file.");
-            }
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Files.copy(file.getInputStream(), this.rootLocation.resolve(filename));
-            return filename;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to store file.", e);
-        }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
-    public Resource loadFileAsResource(String filename) {
-        try {
-            Path file = rootLocation.resolve(filename).normalize();
-            Resource resource = new UrlResource(file.toUri());
+    public Mono<Resource> loadFileAsResource(String filename) {
+        return Mono.fromCallable(() -> {
+            Path filePath = rootLocation.resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
                 throw new RuntimeException("Could not read the file!");
             }
-        } catch (MalformedURLException ex) {
-            throw new RuntimeException("Error: " + ex.getMessage());
-        }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
-    public String createImagePreview(String originalFilename, double resizePercentage) {
-        Path originalFilePath = rootLocation.resolve(originalFilename);
+    public Mono<String> createImagePreview(String originalFilename, double resizePercentage) {
+        return Mono.fromCallable(() -> {
+            Path originalFilePath = rootLocation.resolve(originalFilename);
+            BufferedImage originalImage = ImageIO.read(originalFilePath.toFile());
 
-        try {
-            BufferedImage originalImage = Imaging.getBufferedImage(originalFilePath.toFile());
-            BufferedImage resizedImage = resizeImageByPercentage(originalImage, resizePercentage);
+            // Calculate new dimensions
+            int newWidth = (int) (originalImage.getWidth() * resizePercentage);
+            int newHeight = (int) (originalImage.getHeight() * resizePercentage);
 
-            // Create a low-quality JPEG image
-            File previewFile = new File(rootLocation.toFile(), "preview_" + originalFilename);
-            ImageIO.write(resizedImage, "jpg", previewFile); // Save as JPEG
+            // Resize the image
+            Image resizedImage = originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            BufferedImage bufferedResizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = bufferedResizedImage.createGraphics();
+            g2d.drawImage(resizedImage, 0, 0, null);
+            g2d.dispose();
 
-            return previewFile.getName();
-        } catch (IOException | ImageReadException e) {
-            throw new RuntimeException("Failed to create image preview", e);
-        }
+            // Save the resized image as a new file
+            String previewFilename = "preview_" + originalFilename;
+            Path previewFilePath = rootLocation.resolve(previewFilename);
+            ImageIO.write(bufferedResizedImage, "jpg", previewFilePath.toFile()); // assuming JPEG format
+
+            return previewFilename;
+        }).subscribeOn(Schedulers.boundedElastic());
     }
+
 
     private BufferedImage resizeImageByPercentage(BufferedImage originalImage, double resizePercentage) {
         int width = originalImage.getWidth();
