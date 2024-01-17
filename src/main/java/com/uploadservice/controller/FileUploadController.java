@@ -1,7 +1,6 @@
 package com.uploadservice.controller;
 
 import com.uploadservice.DTO.FileDTO;
-import com.uploadservice.DTO.FileUploadResponseDTO;
 import com.uploadservice.services.FileUploadService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
