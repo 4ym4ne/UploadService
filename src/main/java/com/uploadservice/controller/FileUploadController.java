@@ -1,5 +1,6 @@
 package com.uploadservice.controller;
 
+import com.uploadservice.DTO.FileDTO;
 import com.uploadservice.DTO.FileUploadResponseDTO;
 import com.uploadservice.services.FileUploadService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,17 +27,9 @@ public class FileUploadController {
     @PostMapping(
             "/upload"
     )
-    public Mono<ResponseEntity<FileUploadResponseDTO>> handleFileUpload(@RequestPart("file") MultipartFile file) {
+    public Mono<ResponseEntity<FileDTO>> handleFileUpload(@RequestPart("file") MultipartFile file) {
         return fileUploadService.uploadFile(file)
-                .flatMap(filename -> {
-                    // Check if the uploaded file is an image
-                    if (isImage(file)) {
-                        return fileUploadService.createImagePreview(filename, 0.5) // 50% quality reduction
-                                .map(previewFilename -> ResponseEntity.ok(new FileUploadResponseDTO(filename, previewFilename)));
-                    } else {
-                        return Mono.just(ResponseEntity.ok(new FileUploadResponseDTO(filename, "Not Supported")));
-                    }
-                });
+                .flatMap(uploade -> Mono.just(ResponseEntity.ok(uploade)));
     }
 
     @GetMapping(
@@ -60,10 +53,6 @@ public class FileUploadController {
                 });
     }
 
-    private boolean isImage(MultipartFile file) {
-        String contentType = file.getContentType();
-        return contentType != null && contentType.startsWith("image/");
-    }
 
 }
 

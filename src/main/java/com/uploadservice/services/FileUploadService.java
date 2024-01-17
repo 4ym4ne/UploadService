@@ -1,12 +1,14 @@
 package com.uploadservice.services;
-import org.springframework.http.codec.multipart.FilePart;
+import com.uploadservice.DTO.FileDTO;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 
 public interface FileUploadService {
-    Mono<String> uploadFile(MultipartFile file);
+    Mono<FileDTO> uploadFile(MultipartFile file);
     Mono<Resource> loadFileAsResource(String filename);
-    Mono<String> createImagePreview(String originalFilename, double resizePercentage);
+    Mono<FileDTO> createImagePreview(UUID fileId, double resizePercentage);
 }
