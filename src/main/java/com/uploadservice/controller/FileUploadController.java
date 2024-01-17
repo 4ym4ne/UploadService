@@ -36,10 +36,10 @@ public class FileUploadController {
     }
 
     @GetMapping(
-            "/get/{filename:.+}"
+            "/download/{id}"
     )
-    public Mono<ResponseEntity<Resource>> downloadFile(@PathVariable String filename,HttpServletRequest request) {
-        return fileUploadService.loadFileAsResource(filename)
+    public Mono<ResponseEntity<Resource>> downloadFile(@PathVariable UUID id,HttpServletRequest request) {
+        return fileUploadService.loadFileAsResource(id)
                 .map(resource -> {
                     // Try to determine file's content type
                     String contentType = null;

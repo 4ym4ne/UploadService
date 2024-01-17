@@ -12,6 +12,7 @@ public interface FileUploadService {
 
     Mono<FileDTO> getFileById(UUID id);
 
-    Mono<Resource> loadFileAsResource(String filename);
+    Mono<Resource> loadFileAsResource(UUID id);
+
     Mono<FileDTO> createImagePreview(UUID fileId, double resizePercentage);
 }

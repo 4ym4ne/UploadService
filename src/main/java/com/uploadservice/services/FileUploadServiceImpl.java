@@ -132,9 +132,12 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     @Override
-    public Mono<Resource> loadFileAsResource(String filename) {
+    public Mono<Resource> loadFileAsResource(UUID id) {
         return Mono.fromCallable(() -> {
-            Path filePath = rootLocation.resolve(filename).normalize();
+            FileEntity file = fileRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("File not found"));
+
+            Path filePath = rootLocation.resolve(file.getFilePath()).normalize();
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
