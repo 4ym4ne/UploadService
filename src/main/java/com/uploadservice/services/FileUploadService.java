@@ -9,6 +9,9 @@ import java.util.UUID;
 
 public interface FileUploadService {
     Mono<FileDTO> uploadFile(MultipartFile file);
+
+    Mono<FileDTO> getFileById(UUID id);
+
     Mono<Resource> loadFileAsResource(String filename);
     Mono<FileDTO> createImagePreview(UUID fileId, double resizePercentage);
 }

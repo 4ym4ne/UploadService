@@ -20,10 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.UUID;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class FileUploadServiceImpl implements FileUploadService {
@@ -92,6 +89,48 @@ public class FileUploadServiceImpl implements FileUploadService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+
+    @Override
+    public Mono<FileDTO> getFileById(UUID id) {
+        return Mono.fromCallable(() -> fileRepository.findById(id))
+                .flatMap(optionalFileEntity -> {
+                    if (optionalFileEntity.isPresent()) {
+                        FileEntity fileEntity = optionalFileEntity.get();
+                        FileDTO fileDTO = new FileDTO(
+                                fileEntity.getId(),
+                                fileEntity.getFileName(),
+                                fileEntity.getFileSize(),
+                                fileEntity.getFileType(),
+                                fileEntity.getUploadDate(),
+                                fileEntity.getFilePath(),
+                                fileEntity.getStatus(),
+                                null// Assuming you have a way to set preview image, if needed
+                        );
+                        if (fileEntity.getPreviewImage() != null) {
+                            FileDTO previewDTO = getPreviewFileDTO(fileEntity);
+                            fileDTO.setPreviewImage(previewDTO);
+                        }
+                        return Mono.just(fileDTO);
+                    } else {
+                        return Mono.error(new NoSuchElementException("File not found with ID: " + id));
+                    }
+                }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private static FileDTO getPreviewFileDTO(FileEntity fileEntity) {
+        FileEntity previewEntity = fileEntity.getPreviewImage();
+        return new FileDTO(
+                previewEntity.getId(),
+                previewEntity.getFileName(),
+                previewEntity.getFileSize(),
+                previewEntity.getFileType(),
+                previewEntity.getUploadDate(),
+                previewEntity.getFilePath(),
+                previewEntity.getStatus(),
+                null // Assuming the preview image itself doesn't have a preview
+        );
+    }
+
     @Override
     public Mono<Resource> loadFileAsResource(String filename) {
         return Mono.fromCallable(() -> {
@@ -134,7 +173,7 @@ public class FileUploadServiceImpl implements FileUploadService {
             FileEntity previewFileEntity = new FileEntity();
             previewFileEntity.setId(UUID.randomUUID()); // Generate a new UUID
             previewFileEntity.setFileName(previewFilename);
-            previewFileEntity.setFilePath(previewFilePath.toString());
+            previewFileEntity.setFilePath(previewFileEntity.getId() + "_" +previewFilename);
             previewFileEntity.setFileSize(Files.size(previewFilePath)); // Get the size of the new file
             previewFileEntity.setFileType("image/jpeg");
             previewFileEntity.setUploadDate(Instant.now());
@@ -151,29 +190,14 @@ public class FileUploadServiceImpl implements FileUploadService {
                     previewFileEntity.getId(),
                     previewFilename,
                     Files.size(previewFilePath),
-                    filetoConvert.getFileType(),
+                    "image/jpeg",
                     Instant.now(),
-                    filetoConvert.getId() +"_"+ filetoConvert.getFileName() + "_preview.jpg",
-                    filetoConvert.getStatus(),
+                    previewFileEntity.getFilePath(),
+                    previewFileEntity.getStatus(),
                     null);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    private BufferedImage resizeImageByPercentage(BufferedImage originalImage, double resizePercentage) {
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight();
-
-        int targetWidth = (int) (width * resizePercentage);
-        int targetHeight = (int) (height * resizePercentage);
-
-        BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics2D = resizedImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
-        graphics2D.dispose();
-
-        return resizedImage;
-    }
 
     public void saveToDatabase(FileDTO fileDTO) {
         FileEntity fileEntity = new FileEntity();

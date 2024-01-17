@@ -6,6 +6,7 @@ import com.uploadservice.services.FileUploadService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -53,6 +56,15 @@ public class FileUploadController {
                 });
     }
 
+
+    @GetMapping("/files/{id}")
+    public Mono<ResponseEntity<FileDTO>> getFileById(@PathVariable UUID id) {
+        return fileUploadService.getFileById(id)
+                .map(ResponseEntity::ok) // maps to ResponseEntity.ok(fileDTO)
+                .onErrorResume(NoSuchElementException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+                        ));
+    }
 
 }
 
