@@ -24,5 +24,6 @@ public class FileDTO implements Serializable {
     String filePath;
     String status;
     FileDTO previewImage;
+    UUID messageid;
 
 }

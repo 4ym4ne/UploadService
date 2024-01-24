@@ -50,7 +50,7 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     @Override
-    public Mono<FileDTO> uploadFile(MultipartFile file) {
+    public Mono<FileDTO> uploadFile(MultipartFile file, UUID messageId) {
         return Mono.fromCallable(() -> {
             if (!allowedFileTypes.contains(file.getContentType())) {
                 throw new RuntimeException("File type not allowed.");
@@ -71,7 +71,8 @@ public class FileUploadServiceImpl implements FileUploadService {
                     Instant.now(),
                     filepath,
                     "Uploaded",
-                    null
+                    null,
+                    messageId
             );
 
             saveToDatabase(fileDTO);
@@ -104,7 +105,8 @@ public class FileUploadServiceImpl implements FileUploadService {
                                 fileEntity.getUploadDate(),
                                 fileEntity.getFilePath(),
                                 fileEntity.getStatus(),
-                                null// Assuming you have a way to set preview image, if needed
+                                null,
+                                fileEntity.getMessageid()
                         );
                         if (fileEntity.getPreviewImage() != null) {
                             FileDTO previewDTO = getPreviewFileDTO(fileEntity);
@@ -127,7 +129,8 @@ public class FileUploadServiceImpl implements FileUploadService {
                 previewEntity.getUploadDate(),
                 previewEntity.getFilePath(),
                 previewEntity.getStatus(),
-                null // Assuming the preview image itself doesn't have a preview
+                null,
+                previewEntity.getMessageid()
         );
     }
 
@@ -197,7 +200,9 @@ public class FileUploadServiceImpl implements FileUploadService {
                     Instant.now(),
                     previewFileEntity.getFilePath(),
                     previewFileEntity.getStatus(),
-                    null);
+                    null,
+                    filetoConvert.getMessageid()
+            );
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -212,6 +217,7 @@ public class FileUploadServiceImpl implements FileUploadService {
         fileEntity.setUploadDate(fileDTO.getUploadDate());
         fileEntity.setFilePath(fileDTO.getFilePath());
         fileEntity.setStatus(fileDTO.getStatus());
+        fileEntity.setMessageid(fileDTO.getMessageid());
 
         fileRepository.save(fileEntity);
     }

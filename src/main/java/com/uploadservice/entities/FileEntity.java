@@ -38,6 +38,9 @@ public class FileEntity {
     @Column(name = "status", length = 50)
     private String status;
 
+    @Column(name = "messageid")
+    private UUID messageid;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "preview_image")
     private FileEntity previewImage;

@@ -29,8 +29,9 @@ public class FileUploadController {
     @PostMapping(
             "/upload"
     )
-    public Mono<ResponseEntity<FileDTO>> handleFileUpload(@RequestPart("file") MultipartFile file) {
-        return fileUploadService.uploadFile(file)
+    public Mono<ResponseEntity<FileDTO>> handleFileUpload(@RequestPart("file") MultipartFile file,
+                                                          @RequestParam("messageid") UUID messageId) {
+        return fileUploadService.uploadFile(file, messageId)
                 .flatMap(uploade -> Mono.just(ResponseEntity.ok(uploade)));
     }
 

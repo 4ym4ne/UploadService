@@ -8,7 +8,7 @@ import java.util.UUID;
 
 
 public interface FileUploadService {
-    Mono<FileDTO> uploadFile(MultipartFile file);
+    Mono<FileDTO> uploadFile(MultipartFile file, UUID messageId);
 
     Mono<FileDTO> getFileById(UUID id);
 
