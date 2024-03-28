@@ -34,7 +34,9 @@ public class FileUploadServiceImpl implements FileUploadService {
                     "image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff",
                     // Document MIME types
                     "application/pdf", "application/msword",
-                    "text/plain", "text/csv", "application/rtf"
+                    "text/plain", "text/csv", "application/rtf",
+                    // Add ZIP MIME type
+                    "application/zip"
             )
     );
     private final Path rootLocation = Paths.get("uploadedFiles");
@@ -183,7 +185,7 @@ public class FileUploadServiceImpl implements FileUploadService {
             previewFileEntity.setFileSize(Files.size(previewFilePath)); // Get the size of the new file
             previewFileEntity.setFileType("image/jpeg");
             previewFileEntity.setUploadDate(Instant.now());
-            previewFileEntity.setStatus("Uploaded");
+            previewFileEntity.setStatus("Aktiv");
 
             // Save the new FileEntity to the database
             fileRepository.save(previewFileEntity);
@@ -201,7 +203,7 @@ public class FileUploadServiceImpl implements FileUploadService {
                     previewFileEntity.getFilePath(),
                     previewFileEntity.getStatus(),
                     null,
-                    filetoConvert.getMessageid()
+                    null
             );
         }).subscribeOn(Schedulers.boundedElastic());
     }
